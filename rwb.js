@@ -52,11 +52,22 @@ function UpdateMap()
 
     ClearMarkers();
 
-    UpdateMapById("committee_data","COMMITTEE");
-    UpdateMapById("candidate_data","CANDIDATE");
-    //UpdateMapById("individual_data", "INDIVIDUAL");
-    //UpdateMapById("opinion_data","OPINION");
-
+    if (committee.checked)
+    {
+      UpdateMapById("committee_data","COMMITTEE");
+    }
+    if (candidate.checked)
+    {
+      UpdateMapById("candidate_data","CANDIDATE");
+    }
+    if (individual.checked)
+    {
+      UpdateMapById("individual_data", "INDIVIDUAL");
+    }
+    if (opinion.checked)
+    {
+      UpdateMapById("opinion_data","OPINION");
+    }
 
     color.innerHTML="Ready";
     

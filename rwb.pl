@@ -347,31 +347,12 @@ if ($action eq "base") {
 
   #
   #
-  # And checkboxes to indicate committee, candidate, and individual
+  # And checkboxes to indicate committee, candidate, individual, and opinions
   #
-  my %labels = (
-    "committee" => "Committee",
-    "candidate" => "Candidate",
-    "individual" => "Indvidual"
-  );
-  print "<form action=\"rwb.cgi\" method=\"POST\">";
-  print checkbox_group (
-    -name => "data_choices",
-    -values => ["committee", "candidate", "individual"],
-    -default => ["committee", "candidate"],
-    -labels => \%labels
-    );
-  print "</form>";
-
-  my @checks = param("data_choices");
-  print @checks;
-  my @hi = ("1","2","2","3");
-  print "<br>";
-  print "<span>You've reached here<br></span>";
-  for (my $i=0; $i<=$#hi; $i++) {
-    print $hi[$i];
-    print "<br>";
-  }
+  print "<input type=\"checkbox\" name=\"committee\" id=\"committee\" values=1 onclick=ViewShift()>Committee<br>";
+  print "<input type=\"checkbox\" name=\"candidate\" id=\"candidate\" values=1 onclick=ViewShift()>Candidate<br>";
+  print "<input type=\"checkbox\" name=\"individual\" id=\"individual\" values=1 onclick=ViewShift()>Individual<br>";
+  print "<input type=\"checkbox\" name=\"opinions\" id=\"opinions\" values=1 onclick=ViewShift()>Opinions<br>";
   
   #
   # And a div to populate with info about nearby stuff
@@ -444,8 +425,25 @@ if ($action eq "near") {
   my $cycle = param("cycle");
   my %what;
   
+  #
+  #
+  # And checkboxes to indiciate cycles
+  #
+  my @cycles;
+
+  eval { 
+    @cycles = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.candidate_master natural join cs339.cand_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<? 
+      union select distinct cycle from cs339.committee_master natural join cs339.cmte_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<? 
+      union select distinct cycle from cs339.individual natural join cs339.ind_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne,$latsw,$latne,$longsw,$longne,$latsw,$latne,$longsw,$longne);
+  };
+  foreach (@cycles)
+  {
+    my $label = "@{ $_ }";
+    print "<input type=\"checkbox\" class=\"cycles\" name=" . $label . "id=" . $label . "values=1 onclick=ViewShift()>" . $label;
+  }
+
   $format = "table" if !defined($format);
-  $cycle = "1112" if !defined($cycle);
+  $cycle = "9394" if !defined($cycle);
 
   if (!defined($whatparam) || $whatparam eq "all") { 
     %what = ( committees => 1, 
