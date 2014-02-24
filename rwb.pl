@@ -349,10 +349,12 @@ if ($action eq "base") {
   #
   # And checkboxes to indicate committee, candidate, individual, and opinions
   #
+  print "<form>";
   print "<input type=\"checkbox\" name=\"committee\" id=\"committee\" values=1 onclick=ViewShift()>Committee<br>";
   print "<input type=\"checkbox\" name=\"candidate\" id=\"candidate\" values=1 onclick=ViewShift()>Candidate<br>";
   print "<input type=\"checkbox\" name=\"individual\" id=\"individual\" values=1 onclick=ViewShift()>Individual<br>";
   print "<input type=\"checkbox\" name=\"opinions\" id=\"opinions\" values=1 onclick=ViewShift()>Opinions<br>";
+  print "</form>";
   
   #
   # And a div to populate with info about nearby stuff
@@ -424,7 +426,6 @@ if ($action eq "near") {
   my $format = param("format");
   my $cycle = param("cycle");
   my %what;
-  
   #
   #
   # And checkboxes to indiciate cycles
@@ -435,6 +436,8 @@ if ($action eq "near") {
     @cycles = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.candidate_master natural join cs339.cand_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<? 
       union select distinct cycle from cs339.committee_master natural join cs339.cmte_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<? 
       union select distinct cycle from cs339.individual natural join cs339.ind_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne,$latsw,$latne,$longsw,$longne,$latsw,$latne,$longsw,$longne);
+  
+    # @cycles = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.candidate_master natural join cs339.cand_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
   };
   foreach (@cycles)
   {
@@ -443,7 +446,7 @@ if ($action eq "near") {
   }
 
   $format = "table" if !defined($format);
-  $cycle = "9394" if !defined($cycle);
+  $cycle = "1112" if !defined($cycle);
 
   if (!defined($whatparam) || $whatparam eq "all") { 
     %what = ( committees => 1, 
@@ -727,29 +730,6 @@ print end_html;
 # The main line is finished at this point. 
 # The remainder includes utilty and other functions
 #
-
-#
-# Generate a table of nearby election cycles
-# 
-#sub Cycles {
-#  my ($latne,$longne,$latsw,$longsw,$format) = @_;
-#  my @rows;
-#  eval {
-#    @rows = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.committee_master natural join cs339.cmte_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
-#  };
-#
-#  if ($@) {
-#    return (undef,$@);
-#  } else {
-#    if ($format eq "table") {
-#      return (MakeTable("cycle_data","2D",
-#        ["cycle"],
-#        @rows),$@);
-#    } else {
-#      return (MakeRaw("cycle_data","2D",@rows),$@);
-#    }
-#  }
-#}
 
 #
 # Generate a table of nearby committees

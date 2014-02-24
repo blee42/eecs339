@@ -10,6 +10,12 @@
 //
 // First time run: request current location, with callback to Start
 //
+$("document").ready(function() {
+  var committee = document.getElementById("committee");
+  var candidate = document.getElementById("candidate");
+  var individual = document.getElementById("individual");
+  var opinions = document.getElementById("opinions");
+})
 if (navigator.geolocation)  {
     navigator.geolocation.getCurrentPosition(Start);
 }
@@ -23,14 +29,13 @@ function UpdateMapById(id, tag) {
     var rows  = data.split("\n");
    
     for (i in rows) {
-	var cols = rows[i].split("\t");
-	var lat = cols[0];
-	var long = cols[1];
+    	var cols = rows[i].split("\t");
+    	var lat = cols[0];
+    	var long = cols[1];
 
-	markers.push(new google.maps.Marker({ map:map,
-						    position: new google.maps.LatLng(lat,long),
-						    title: tag+"\n"+cols.join("\n")}));
-	
+    	markers.push(new google.maps.Marker({ map:map,
+    						    position: new google.maps.LatLng(lat,long),
+    						    title: tag+"\n"+cols.join("\n")}));
     }
 }
 
@@ -64,7 +69,7 @@ function UpdateMap()
     {
       UpdateMapById("individual_data", "INDIVIDUAL");
     }
-    if (opinion.checked)
+    if (opinions.checked)
     {
       UpdateMapById("opinion_data","OPINION");
     }
@@ -72,9 +77,9 @@ function UpdateMap()
     color.innerHTML="Ready";
     
     if (Math.random()>0.5) { 
-	color.style.backgroundColor='blue';
+	     color.style.backgroundColor='blue';
     } else {
-	color.style.backgroundColor='red';
+	     color.style.backgroundColor='red';
     }
 
 }
@@ -100,9 +105,29 @@ function ViewShift()
 
     color.innerHTML="<b><blink>Querying...("+ne.lat()+","+ne.lng()+") to ("+sw.lat()+","+sw.lng()+")</blink></b>";
     color.style.backgroundColor='white';
+
+    var datachoice="";
+    if (committee.checked)
+    {
+      datachoice=datachoice+"committees,";
+    }
+    if (candidate.checked)
+    {
+      datachoice=datachoice+"candidates,";
+    }
+    if (individual.checked)
+    {
+      datachoice=datachoice+"individuals,";
+    }
+    if (opinions.checked)
+    {
+      datachoice=datachoice+"opinions,";
+    }
+
    
     // debug status flows through by cookie
-    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees,candidates", NewData);
+    // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees", NewData);
+    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice, NewData);
 }
 
 
