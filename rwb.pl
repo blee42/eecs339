@@ -476,8 +476,7 @@ if ($action eq "sum") {
       print "<h3>Committee to Committee Summary</h3>";
       print $cm2cmt;
     }
-  }
-  if ($what{candidates}) {
+  
     my ($cm2cnd,$c2cd_color,$error2) = Aggr_Comm2Cand($latne,$longne,$latsw,$longsw,$cycleSQL,$format);
     if ($error2) {
       print "Error in Comm2Cand summary data";
@@ -860,12 +859,12 @@ sub Committees {
 sub Aggr_Comm2Cand {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my (@rows, @dems, @reps);
-  my ($dem, $rep, $color) = (0,0,"NONE");
+  my ($dem, $rep, $color) = (0,0,"white");
   my $try=0;
   
-  while (($dem==0 && $rep==0) && $try<=5) {
+  while (($dem==0 || $rep==0) && $try<=5) {
     eval { 
-      @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<?".$cycle,undef,$latsw,$latne,$longsw,$longne);
+      @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
     };
     # find the total DEM amts
     $dem = $dems[0][0];
@@ -876,7 +875,7 @@ sub Aggr_Comm2Cand {
     }
   
     eval { 
-      @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<?".$cycle,undef,$latsw,$latne,$longsw,$longne);
+      @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
     };
     # find the total REP amts
     $rep = $reps[0][0];
@@ -895,20 +894,20 @@ sub Aggr_Comm2Cand {
   }
   
   if ($rep > $dem) {
-	  $color = "REP";
+	  $color = "red";
   } elsif ($dem > $rep) {
-	  $color = "DEM";
+	  $color = "blue";
   } else {
-	  $color = "NONE";
+	  $color = "white";
   }
   
   @rows= (["REP",$rep],["DEM",$dem]);
   
   if ($@) { 
-    return (undef,$@);
+    return (undef,$color,$@);
   } else {
-      return (MakeTable("comm2cand_summary","2D",
-			["party", "amount"],
+      return (MakeTableColor("comm2cand_summary","2D",
+			["Party", "Amount"],$color,
 			@rows),$color,$@);
   }
 }
@@ -921,10 +920,10 @@ sub Aggr_Comm2Cand {
 sub Aggr_Comm2Comm {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my (@rows, @dems, @reps);
-  my ($dem, $rep, $color) = (0,0,"NONE");
+  my ($dem, $rep, $color) = (0,0,"white");
   my $try=0;
   
-  while (($dem==0 && $rep==0) && $try<=5) {
+  while (($dem==0 || $rep==0) && $try<=5) {
   
   eval { 
     @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
@@ -957,11 +956,11 @@ sub Aggr_Comm2Comm {
   }
   
   if ($rep > $dem) {
-	  $color = "REP";
+	  $color = "red";
   } elsif ($dem > $rep) {
-	  $color = "DEM";
+	  $color = "blue";
   } else {
-	  $color = "NONE";
+	  $color = "white";
   }
   
   @rows= (["REP",$rep],["DEM",$dem]);
@@ -970,8 +969,8 @@ sub Aggr_Comm2Comm {
   if ($@) { 
     return (undef,$@);
   } else { 
-      return (MakeTable("comm2comm_summary","2D",
-			["party", "amount"],
+      return (MakeTableColor("comm2comm_summary","2D",
+			["Party", "Amount"], $color,
 			@rows),$color,$@);
   }
 }
@@ -1038,10 +1037,10 @@ sub Individuals {
 sub Aggr_Individuals {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my (@rows, @dems, @reps);
-  my ($dem, $rep, $color) = (0,0,"NONE");
+  my ($dem, $rep, $color) = (0,0,"white");
   my $try=0;
   
-  while (($dem==0 && $rep==0) && $try<=3) {
+  while (($dem==0 || $rep==0) && $try<=3) {
   
   eval { 
     @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
@@ -1055,7 +1054,7 @@ sub Aggr_Individuals {
   }
   
   eval { 
-    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<?".$cycle,undef,$latsw,$latne,$longsw,$longne);
+    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
   };
   # find the total REP amts
   $rep = $reps[0][0];
@@ -1073,20 +1072,20 @@ sub Aggr_Individuals {
   }
   
   if ($rep > $dem) {
-	  $color = "REP";
+	  $color = "red";
   } elsif ($dem > $rep) {
-	  $color = "DEM";
+	  $color = "blue";
   } else {
-	  $color = "NONE";
+	  $color = "white";
   }
   
   @rows= (["REP",$rep],["DEM",$dem]);
   
   if ($@) { 
-    return (undef,$@);
+    return (undef,$color,$@);
   } else {
-      return (MakeTable("individual_summary","2D",
-			["party", "amount"],
+      return (MakeTableColor("individual_summary","2D",
+			["Party", "Amount"],$color,
 			@rows),$color,$@);
   }
 }
@@ -1125,7 +1124,7 @@ sub Opinions {
 sub Aggr_Opinions {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my (@rows, @avgs, @stds);
-  my ($avg, $std, $color) = (0,0,"NONE");
+  my ($avg, $std, $color) = (0,0,"white");
   my $try=0;
   
   while ($avg==0 && $try<=3) {
@@ -1160,21 +1159,21 @@ sub Aggr_Opinions {
   }  
   
   if ($avg > 0) {
-	  $color = "REP";
+	  $color = "red";
   } elsif ($avg < 0) {
-	  $color = "DEM";
+	  $color = "blue";
   } else {
-	  $color = "NONE";
+	  $color = "white";
   }
   
   
   @rows= ([$avg,$std]);
   
   if ($@) { 
-    return (undef,$@);
+    return (undef,$color,$@);
   } else {
-      return (MakeTable("opinion_summary","2D",
-			["Average","Stnd Dev"],
+      return (MakeTableColor("opinion_summary","2D",
+			["Average","Std Dev"],$color,
 			@rows),$color,$@);
     }
 }
@@ -1347,6 +1346,70 @@ sub MakeTable {
     # if there is, begin a table
     #
     $out="<table id=\"$id\" border>";
+    #
+    # if there is a header list, then output it in bold
+    #
+    if (defined $headerlistref) { 
+      $out.="<tr>".join("",(map {"<td><b>$_</b></td>"} @{$headerlistref}))."</tr>";
+    }
+    #
+    # If it's a single row, just output it in an obvious way
+    #
+    if ($type eq "ROW") { 
+      #
+      # map {code} @list means "apply this code to every member of the list
+      # and return the modified list.  $_ is the current list member
+      #
+      $out.="<tr>".(map {defined($_) ? "<td>$_</td>" : "<td>(null)</td>" } @list)."</tr>";
+    } elsif ($type eq "COL") { 
+      #
+      # ditto for a single column
+      #
+      $out.=join("",map {defined($_) ? "<tr><td>$_</td></tr>" : "<tr><td>(null)</td></tr>"} @list);
+    } else { 
+      #
+      # For a 2D table, it's a bit more complicated...
+      #
+      $out.= join("",map {"<tr>$_</tr>"} (map {join("",map {defined($_) ? "<td>$_</td>" : "<td>(null)</td>"} @{$_})} @list));
+    }
+    $out.="</table>";
+  } else {
+    # if no header row or list, then just say none.
+    $out.="(none)";
+  }
+  return $out;
+}
+
+#
+# Given a list of scalars, or a list of references to lists, generates
+# an html table
+#
+#
+# $type = undef || 2D => @list is list of references to row lists
+# $type = ROW   => @list is a row
+# $type = COL   => @list is a column
+#
+# $headerlistref points to a list of header columns
+#
+#
+# $html = MakeTable($id, $type, $headerlistref,@list);
+#
+sub MakeTableColor {
+  my ($id,$type,$headerlistref,$color,@list)=@_;
+  my $out;
+  # check color
+  my $fcolor = "black";
+  if (($color eq "blue") || ($color eq "red")) {
+    $fcolor = "white";
+  }
+  
+  #
+  # Check to see if there is anything to output
+  #
+  if ((defined $headerlistref) || ($#list>=0)) {
+    # if there is, begin a table
+    #
+    $out="<table id=\"$id\" border=\"1\" bgcolor=\"$color\" style=\"color:$fcolor\">";
     #
     # if there is a header list, then output it in bold
     #
