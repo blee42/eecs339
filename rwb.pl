@@ -77,8 +77,8 @@ use Time::ParseDate;
 #
 # You need to override these for access to your database
 #
-my $dbuser="hhs609";
-my $dbpasswd="abc.123";
+my $dbuser="bal312";
+my $dbpasswd="sqlbal312";
 
 
 #
@@ -431,7 +431,7 @@ if ($action eq "base") {
 }
 
 
-      #
+#
 #
 # AGGREGATE
 #
@@ -567,12 +567,55 @@ if ($action eq "near") {
 }
 
 
-if ($action eq "invite-user") { 
-  print h2("Invite User Functionality Is Unimplemented");
+#
+# INVITE USER
+#
+if ($action eq "invite-user") {
+  if (!UserCan($user,"manage-users") && !UserCan($user,"invite-users")) {
+    print h2("You do not have the required permissions to invite users.");
+  } else {
+    if (!$run) {
+      print start_form(-name=>'InviteUser'),
+        h2('Invite User'),
+              "Email to Invite: ", textfield(-name=>'email'),
+                    p,
+                          submit,
+                            end_form,
+                              hr;
+    } else {
+        print "Can't add opinion because something...";
+
+    }
+  }
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
 
-if ($action eq "give-opinion-data") { 
-  print h2("Giving Location Opinion Data Is Unimplemented");
+
+#
+# GIVE OPINION DATA
+#
+if ($action eq "give-opinion-data") {
+  if (!UserCan($user,"give-opinion-data")) {
+    print h2("You do not have the required permissions to give opinion data.");
+  } else {
+    if (!$run) {
+      print start_form(-name=>'GiveOpinion'),
+        h2('Give Opinion'),
+          "Color Guide",
+            p,
+              "-1 = Red | 0 = White | 1 = Blue",
+                p,
+                  "Color: ", textfield(-number=>'color'),
+                    p,
+                          submit,
+                            end_form,
+                              hr;
+    } else {
+        print "Can't add opinion because something...";
+
+    }
+  }
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
 
 if ($action eq "give-cs-ind-data") { 
