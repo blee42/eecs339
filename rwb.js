@@ -107,6 +107,7 @@ function ViewShift()
     color.style.backgroundColor='white';
 
     var datachoice="";
+    var cycles="";
     if (committee.checked)
     {
       datachoice=datachoice+"committees,";
@@ -124,10 +125,21 @@ function ViewShift()
       datachoice=datachoice+"opinions,";
     }
 
+    cycles=$(".cycles");
+    cyclesChecked="";
+    for (var i=0; i<cycles.length; i++)
+    {
+      if(cycles[i].checked)
+      {
+        cyclesChecked=cyclesChecked+cycles[i].id+",";
+        // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cycles[i].id, NewData);
+      }
+    }
    
     // debug status flows through by cookie
     // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees", NewData);
-    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice, NewData);
+    // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice, NewData);
+    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cyclesChecked, NewData);
 }
 
 
