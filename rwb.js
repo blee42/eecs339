@@ -94,6 +94,13 @@ function NewData(data)
 
 }
 
+function NewSum(data)
+{
+  var target = document.getElementById("sum");
+  
+  target.innerHTML = data;
+}
+
 function ViewShift()
 {
     var bounds = map.getBounds();
@@ -139,6 +146,8 @@ function ViewShift()
     // debug status flows through by cookie
     // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees", NewData);
     // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice, NewData);
+    
+    $.get("rwb.pl?act=sum&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cyclesChecked, NewSum);
     $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cyclesChecked, NewData);
 }
 
