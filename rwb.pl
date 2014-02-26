@@ -77,8 +77,8 @@ use Time::ParseDate;
 #
 # You need to override these for access to your database
 #
-my $dbuser="bal312";
-my $dbpasswd="sqlbal312";
+my $dbuser="hhs609";
+my $dbpasswd="abc.123";
 
 
 #
@@ -344,35 +344,7 @@ if ($action eq "base") {
   # And a map which will be populated later
   #
   print "<div id=\"map\" style=\"width:100\%; height:80\%\"></div>";
-
-  #
-  #
-  # And checkboxes to indicate committee, candidate, and individual
-  #
-  my %labels = (
-    "committee" => "Committee",
-    "candidate" => "Candidate",
-    "individual" => "Indvidual"
-  );
-  print "<form action=\"rwb.cgi\" method=\"POST\">";
-  print checkbox_group (
-    -name => "data_choices",
-    -values => ["committee", "candidate", "individual"],
-    -default => ["committee", "candidate"],
-    -labels => \%labels
-    );
-  print "</form>";
-
-  my @checks = param("data_choices");
-  print @checks;
-  my @hi = ("1","2","2","3");
-  print "<br>";
-  print "<span>You've reached here<br></span>";
-  for (my $i=0; $i<=$#hi; $i++) {
-    print $hi[$i];
-    print "<br>";
-  }
-  
+ 
   #
   # And a div to populate with info about nearby stuff
   #
@@ -382,12 +354,13 @@ if ($action eq "base") {
     print "<div id=\"data\" style=\:width:100\%; height:10\%\"></div>";
   } else {
     # invisible otherwise
-    print "<div id=\"data\" style=\"display: none;\"></div>";
+    print "<div id=\"data\" style=\:width:100\%; height:10\%\"></div>";
+    # print "<div id=\"data\" style=\"display: none;\"></div>";
   }
 
-
-# height=1024 width=1024 id=\"info\" name=\"info\" onload=\"UpdateMap()\"></iframe>";
   
+# height=1024 width=1024 id=\"info\" name=\"info\" onload=\"UpdateMap()\"></iframe>";
+
 
   #
   # User mods
@@ -419,6 +392,54 @@ if ($action eq "base") {
 
 }
 
+
+      #
+#
+# AGGREGATE
+#
+# Nearby summary for committees, individuals, and opinions
+# need to figure out how check boxes work. and stuff
+#
+if ($action eq "near") {
+  my $latne = param("latne");
+  my $longne = param("longne");
+  my $latsw = param("latsw");
+  my $longsw = param("longsw");
+  my $whatparam = param("what");
+  my $format = param("format");
+  my $cycle = param("cycle");
+  my %what;
+  
+  $format = "table" if !defined($format);
+  $cycle = "1112" if !defined($cycle);
+  
+      my ($cm2cmt,$c2cm_color,$error1) = Aggr_Comm2Comm($latne,$longne,$latsw,$longsw,$cycle,$format);
+    if ($error1) { 
+	print "Error in Comm2Comm summary data";
+    }
+    my ($cm2cnd,$c2cd_color,$error2) = Aggr_Comm2Cand($latne,$longne,$latsw,$longsw,$cycle,$format);
+    if ($error2) {
+	print "Error in Comm2Cand summary data";
+    }
+    my ($ind,$ind_color,$error3) = Aggr_Individuals($latne,$longne,$latsw,$longsw,$cycle,$format);
+    if ($error3) {
+	print "Error in Individual summary data";
+    }
+    my ($opn,$op_color,$error4) = Aggr_Opinions($latne,$longne,$latsw,$longsw,$cycle,$format);
+    if ($error4) {
+	print "Error in Opinion summary data";
+    }
+    
+    print "<h3>Committee to Committee Summary</h3>";
+    print $cm2cmt;
+    print "<h3>Committee to Candidate Summary</h3>";
+    print $cm2cnd;
+    print "<h3>Individual Summary</h3>";
+    print $ind;
+    print "<h3>Opinion Summary</h3>";
+    print $opn;
+}
+
 #
 #
 # NEAR
@@ -446,7 +467,8 @@ if ($action eq "near") {
   
   $format = "table" if !defined($format);
   $cycle = "1112" if !defined($cycle);
-
+  
+  
   if (!defined($whatparam) || $whatparam eq "all") { 
     %what = ( committees => 1, 
 	      candidates => 1,
@@ -455,8 +477,7 @@ if ($action eq "near") {
   } else {
     map {$what{$_}=1} split(/\s*,\s*/,$whatparam);
   }
-	       
-
+		   
   if ($what{committees}) { 
     my ($str,$error) = Committees($latne,$longne,$latsw,$longsw,$cycle,$format);
     if (!$error) {
@@ -641,9 +662,10 @@ if ($action eq "add-perm-user") {
 
 
 #
-# REVOKE-PERM-USER
+## REVOKE-PERM-USER
 #
 # User Permission Revocation functionaltiy 
+#
 #
 #
 #
@@ -730,28 +752,6 @@ print end_html;
 # The remainder includes utilty and other functions
 #
 
-#
-# Generate a table of nearby election cycles
-# 
-#sub Cycles {
-#  my ($latne,$longne,$latsw,$longsw,$format) = @_;
-#  my @rows;
-#  eval {
-#    @rows = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.committee_master natural join cs339.cmte_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
-#  };
-#
-#  if ($@) {
-#    return (undef,$@);
-#  } else {
-#    if ($format eq "table") {
-#      return (MakeTable("cycle_data","2D",
-#        ["cycle"],
-#        @rows),$@);
-#    } else {
-#      return (MakeRaw("cycle_data","2D",@rows),$@);
-#    }
-#  }
-#}
 
 #
 # Generate a table of nearby committees
@@ -778,6 +778,129 @@ sub Committees {
   }
 }
 
+#
+# Generate an aggregated table of nearby committee money, grouped by party
+# ($table|$raw,$error) = Aggr_Comm2Cand(latne,longne,latsw,longsw,cycle,format)
+# $error false on success, error string on failure
+#
+sub Aggr_Comm2Cand {
+  my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
+  my (@rows, @dems, @reps);
+  my ($dem, $rep, $color) = (0,0,"NONE");
+  my $try=0;
+  
+  while (($dem==0 || $rep==0) && $try<=5) {
+    eval { 
+      @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('DEM','Dem','dem') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    };
+    # find the total DEM amts
+    $dem = $dems[0][0];
+    if (defined $dem) {
+	    $dem = $dem;
+    } else {
+	    $dem = 0;
+    }
+  
+    eval { 
+      @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    };
+    # find the total REP amts
+    $rep = $reps[0][0];
+    if (defined $rep) {
+	    $rep = $rep;
+    } else {
+	    $rep = 0;
+    }
+  
+  $latsw -= ($latne-$latsw)/2;
+  $latne += ($latne-$latsw)/2;
+  $longsw -= ($longne-$longsw)/2;
+  $longne += ($longne-$longsw)/2;
+  $try ++
+  
+  }
+  
+  if ($rep > $dem) {
+	  $color = "REP";
+  } elsif ($dem > $rep) {
+	  $color = "DEM";
+  } else {
+	  $color = "NONE";
+  }
+  
+  @rows= (["REP",$rep],["DEM",$dem]);
+  
+  if ($@) { 
+    return (undef,$@);
+  } else {
+      return (MakeTable("comm2cand_summary","2D",
+			["party", "amount"],
+			@rows),$color,$@);
+  }
+}
+
+#
+# Generate an aggregated table of nearby committee money, grouped by party
+# ($table|$raw,$error) = Aggr_Comm2Comm(latne,longne,latsw,longsw,cycle,format)
+# $error false on success, error string on failure
+#
+sub Aggr_Comm2Comm {
+  my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
+  my (@rows, @dems, @reps);
+  my ($dem, $rep, $color) = (0,0,"NONE");
+  my $try=0;
+  
+  while (($dem==0 || $rep==0) && $try<=5) {
+  
+  eval { 
+    @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('DEM','Dem','dem') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+  };
+  # find the total DEM amts
+  $dem = $dems[0][0];
+  if (defined $dem) {
+	  $dem = $dem;
+  } else {
+	  $dem = 0;
+  }
+  
+  eval { 
+    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+  };
+  # find the total REP amts
+  $rep = $reps[0][0];
+  if (defined $rep) {
+	  $rep = $rep;
+  } else {
+	  $rep = 0;
+  }
+  
+  $latsw -= ($latne-$latsw)/2;
+  $latne += ($latne-$latsw)/2;
+  $longsw -= ($longne-$longsw)/2;
+  $longne += ($longne-$longsw)/2;
+  $try ++
+  
+  }
+  
+  if ($rep > $dem) {
+	  $color = "REP";
+  } elsif ($dem > $rep) {
+	  $color = "DEM";
+  } else {
+	  $color = "NONE";
+  }
+  
+  @rows= (["REP",$rep],["DEM",$dem]);
+  
+  
+  if ($@) { 
+    return (undef,$@);
+  } else { 
+      return (MakeTable("comm2comm_summary","2D",
+			["party", "amount"],
+			@rows),$color,$@);
+  }
+}
 
 #
 # Generate a table of nearby candidates
@@ -833,6 +956,66 @@ sub Individuals {
   }
 }
 
+#
+# Generate an aggregated table of nearby individual money, grouped by party
+# ($table|$raw,$error) = Aggr_Individuals(latne,longne,latsw,longsw,cycle,format)
+# $error false on success, error string on failure
+#
+sub Aggr_Individuals {
+  my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
+  my (@rows, @dems, @reps);
+  my ($dem, $rep, $color) = (0,0,"NONE");
+  my $try=0;
+  
+  while (($dem==0 || $rep==0) && $try<=3) {
+  
+  eval { 
+    @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('DEM','Dem','dem') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+  };
+  # find the total DEM amts
+  $dem = $dems[0][0];
+  if (defined $dem) {
+	  $dem = $dem;
+  } else {
+	  $dem = 0;
+  }
+  
+  eval { 
+    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+  };
+  # find the total REP amts
+  $rep = $reps[0][0];
+  if (defined $rep) {
+	  $rep = $rep;
+  } else {
+	  $rep = 0;
+  }
+  
+  $latsw -= ($latne-$latsw)/2;
+  $latne += ($latne-$latsw)/2;
+  $longsw -= ($longne-$longsw)/2;
+  $longne += ($longne-$longsw)/2;
+  $try ++
+  }
+  
+  if ($rep > $dem) {
+	  $color = "REP";
+  } elsif ($dem > $rep) {
+	  $color = "DEM";
+  } else {
+	  $color = "NONE";
+  }
+  
+  @rows= (["REP",$rep],["DEM",$dem]);
+  
+  if ($@) { 
+    return (undef,$@);
+  } else {
+      return (MakeTable("individual_summary","2D",
+			["party", "amount"],
+			@rows),$color,$@);
+  }
+}
 
 #
 # Generate a table of nearby opinions
@@ -852,7 +1035,7 @@ sub Opinions {
   } else {
     if ($format eq "table") { 
       return (MakeTable("opinion_data","2D",
-			["latitude", "longitude", "name", "city", "state", "zip", "employer", "amount"],
+			["latitude", "longitude", "opinion"],
 			@rows),$@);
     } else {
       return (MakeRaw("opinion_data","2D",@rows),$@);
@@ -860,6 +1043,67 @@ sub Opinions {
   }
 }
 
+#
+# Generate an aggregated table of nearby opinions, grouped by party
+# ($table|$raw,$error) = Aggr_Opinions(latne,longne,latsw,longsw,cycle,format)
+# $error false on success, error string on failure
+#
+sub Aggr_Opinions {
+  my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
+  my (@rows, @avgs, @stds);
+  my ($avg, $std, $color) = (0,0,"NONE");
+  my $try=0;
+  
+  while ($avg==0 && $try<=3) {
+  
+  eval { 
+    @avgs = ExecSQL($dbuser, $dbpasswd, "select avg(color) from rwb_opinions where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
+  };
+  # find the total AVG amts
+  $avg = $avgs[0][0];
+  if (defined $avg) {
+	  $avg = $avg;
+  } else {
+	  $avg = 0;
+  }
+  
+  eval { 
+    @stds = ExecSQL($dbuser, $dbpasswd, "select stddev(color) from rwb_opinions where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
+  };
+  # find the total AVG amts
+  $std = $stds[0][0];
+  if (defined $std) {
+	  $std = $std;
+  } else {
+	  $std = 0;
+  }
+  
+  $latsw -= ($latne-$latsw)/2;
+  $latne += ($latne-$latsw)/2;
+  $longsw -= ($longne-$longsw)/2;
+  $longne += ($longne-$longsw)/2;
+  $try ++
+  }  
+  
+  if ($avg > 0) {
+	  $color = "REP";
+  } elsif ($avg < 0) {
+	  $color = "DEM";
+  } else {
+	  $color = "NONE";
+  }
+  
+  
+  @rows= ([$avg,$std]);
+  
+  if ($@) { 
+    return (undef,$@);
+  } else {
+      return (MakeTable("opinion_summary","2D",
+			["Average","Stnd Dev"],
+			@rows),$color,$@);
+    }
+}
 
 #
 # Generate a table of available permissions
@@ -1063,7 +1307,6 @@ sub MakeTable {
   return $out;
 }
 
-
 #
 # Given a list of scalars, or a list of references to lists, generates
 # an HTML <pre> section, one line per row, columns are tab-deliminted
@@ -1151,7 +1394,6 @@ sub ExecSQL {
     die $errstr;
   }
   if (not $sth->execute(@fill)) { 
-    #
     # if exec failed, record to sqlout and die.
     if ($debug) { 
       push @sqloutput, "<b>ERROR: Can't execute '$querystring' with fill (".join(",",map {"'$_'"} @fill).") because of ".$DBI::errstr."</b>";
