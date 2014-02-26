@@ -615,6 +615,21 @@ if ($action eq "invite-user") {
 }
 
 
+#$ mailx -s "Your New Account" f...@bar.com
+#[type content of email]
+#[type CTRL-D]
+#$
+#To drive it from Perl looks like this:
+#$address="f...@bar.com";
+#$subject="Your New Account";
+#$content="Your New Account is <.....>";
+# This is the magic.  It means "run mail -s ..." and let me 
+# write to its input, which I will call MAIL:
+# open(MAIL,"| mailx -s $subject $address") or die "Can't run mail\n";
+# And here we write to it
+# print MAIL $content;
+# And then close it, resulting in the email being sent
+# close(MAIL);
 #
 # GIVE OPINION DATA
 #
@@ -624,22 +639,34 @@ if ($action eq "give-opinion-data") {
   } else {
     if (!$run) {
       print start_form(-name=>'GiveOpinion'),
+  <script src="location.js">;
         h2('Give Opinion'),
-          "Color Guide",
-            p,
-              "-1 = Red | 0 = White | 1 = Blue",
-                p,
-                  "Color: ", textfield(-number=>'color'),
-                    p,
-                          submit,
-                            end_form,
-                              hr;
+        "Color Guide",
+        p,
+        "-1 = Red | 0 = White | 1 = Blue",
+        p,
+        "Color: ", textfield(-number=>'color'),
+        p,
+        hidden(-number=>'latitude',-default=>['lat']),
+        hidden(-number=>'longitude',-default=>['long']),
+        submit,
+        end_form,
+        hr;
     } else {
-        print "Can't add opinion because something...";
-
+        my $name=$user;
+        my $color=param('color');
+        my $lat=param('latitude');
+  my $long=param('longitude');
+  my $error;
+  $error=GiveOp($name,$color,$lat,$long);
+  if ($error) {
+    print "Can't add opinion because $error";
+  } else {
+    print "Opinion added by $user\n";
+  }
     }
   }
-  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";    
 }
 
 if ($action eq "give-cs-ind-data") { 
@@ -1271,6 +1298,11 @@ sub UserPermTable {
 		     @rows),$@);
   }
 }
+
+sub GiveOp {
+  eval { ExecSQL($dbuser,$dbpasswd,"insert into rwb_opinions (submitter,color,latitude,longitude) values (?,?,?,?)",undef,@_);};
+  return $@;
+} 
 
 #
 # Add a user
