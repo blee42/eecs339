@@ -331,20 +331,17 @@ if ($action eq "base") {
   #
   print "<script type=\"text/javascript\" src=\"rwb.js\"> </script>";
 
-
+  #
+  #
+  # And a map which will be populated later
+  #
+  print "<div id=\"map\" style=\"width:100\%; height:80\%\"></div>";
 
   #
   #
   # And something to color (Red, White, or Blue)
   #
   print "<div id=\"color\" style=\"width:100\%; height:10\%\"></div>";
-
-  #
-  #
-  # And a map which will be populated later
-  #
-  print "<div id=\"map\" style=\"width:100\%; height:80\%\"></div>";
- 
 
   #
   #
