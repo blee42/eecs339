@@ -382,7 +382,7 @@ if ($action eq "base") {
   }
   print "</form>";
   
-
+  print "<div id=\"sum\" style=\:width:100\%; height:10\%\"></div>";
   #
   # And a div to populate with info about nearby stuff
   #
@@ -392,8 +392,7 @@ if ($action eq "base") {
     print "<div id=\"data\" style=\:width:100\%; height:10\%\"></div>";
   } else {
     # invisible otherwise
-    print "<div id=\"data\" style=\:width:100\%; height:10\%\"></div>";
-    # print "<div id=\"data\" style=\"display: none;\"></div>";
+    print "<div id=\"data\" style=\"display: none;\"></div>";
   }
 
   
@@ -438,7 +437,7 @@ if ($action eq "base") {
 # Nearby summary for committees, individuals, and opinions
 # need to figure out how check boxes work. and stuff
 #
-if ($action eq "near") {
+if ($action eq "sum") {
   my $latne = param("latne");
   my $longne = param("longne");
   my $latsw = param("latsw");
@@ -447,35 +446,64 @@ if ($action eq "near") {
   my $format = param("format");
   my $cycle = param("cycle");
   my %what;
-  
+
+  my @cycle=split(/\s*,\s*/, $cycle);
+  my $cycleSQL="and (cycle=" . shift(@cycle);
+  foreach my $val (@cycle)
+  {
+    $cycleSQL=$cycleSQL . " or cycle=" . $val;
+  }
+  $cycleSQL=$cycleSQL . ")";
+
   $format = "table" if !defined($format);
   $cycle = "1112" if !defined($cycle);
   
-      my ($cm2cmt,$c2cm_color,$error1) = Aggr_Comm2Comm($latne,$longne,$latsw,$longsw,$cycle,$format);
+  
+  if (!defined($whatparam) || $whatparam eq "all") { 
+    %what = ( committees => 1, 
+	      candidates => 1,
+	      individuals =>1,
+	      opinions => 1);
+  } else {
+    map {$what{$_}=1} split(/\s*,\s*/,$whatparam);
+  }
+		   
+  if ($what{committees}) {   
+      my ($cm2cmt,$c2cm_color,$error1) = Aggr_Comm2Comm($latne,$longne,$latsw,$longsw,$cycleSQL,$format);
     if ($error1) { 
-	print "Error in Comm2Comm summary data";
+      print "Error in Comm2Comm summary data";
+    } else {
+      print "<h3>Committee to Committee Summary</h3>";
+      print $cm2cmt;
     }
-    my ($cm2cnd,$c2cd_color,$error2) = Aggr_Comm2Cand($latne,$longne,$latsw,$longsw,$cycle,$format);
+  }
+  if ($what{candidates}) {
+    my ($cm2cnd,$c2cd_color,$error2) = Aggr_Comm2Cand($latne,$longne,$latsw,$longsw,$cycleSQL,$format);
     if ($error2) {
-	print "Error in Comm2Cand summary data";
+      print "Error in Comm2Cand summary data";
+    }	else {
+      print "<h3>Committee to Candidate Summary</h3>";
+      print $cm2cnd;
     }
-    my ($ind,$ind_color,$error3) = Aggr_Individuals($latne,$longne,$latsw,$longsw,$cycle,$format);
+  }
+  if ($what{individuals}) {
+    my ($ind,$ind_color,$error3) = Aggr_Individuals($latne,$longne,$latsw,$longsw,$cycleSQL,$format);
     if ($error3) {
-	print "Error in Individual summary data";
+      print "Error in Individual summary data";
+    } else {
+      print "<h3>Individual Summary</h3>";
+      print $ind;
     }
-    my ($opn,$op_color,$error4) = Aggr_Opinions($latne,$longne,$latsw,$longsw,$cycle,$format);
+  }
+  if ($what{opinions}) {
+    my ($opn,$op_color,$error4) = Aggr_Opinions($latne,$longne,$latsw,$longsw,$cycleSQL,$format);
     if ($error4) {
-	print "Error in Opinion summary data";
+      print "Error in Opinion summary data";
+    } else {
+      print "<h3>Opinion Summary</h3>";
+      print $opn;
     }
-    
-    print "<h3>Committee to Committee Summary</h3>";
-    print $cm2cmt;
-    print "<h3>Committee to Candidate Summary</h3>";
-    print $cm2cnd;
-    print "<h3>Individual Summary</h3>";
-    print $ind;
-    print "<h3>Opinion Summary</h3>";
-    print $opn;
+  }
 }
 
 #
@@ -835,9 +863,9 @@ sub Aggr_Comm2Cand {
   my ($dem, $rep, $color) = (0,0,"NONE");
   my $try=0;
   
-  while (($dem==0 || $rep==0) && $try<=5) {
+  while (($dem==0 && $rep==0) && $try<=5) {
     eval { 
-      @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('DEM','Dem','dem') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+      @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<?".$cycle,undef,$latsw,$latne,$longsw,$longne);
     };
     # find the total DEM amts
     $dem = $dems[0][0];
@@ -848,7 +876,7 @@ sub Aggr_Comm2Cand {
     }
   
     eval { 
-      @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+      @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<?".$cycle,undef,$latsw,$latne,$longsw,$longne);
     };
     # find the total REP amts
     $rep = $reps[0][0];
@@ -896,10 +924,10 @@ sub Aggr_Comm2Comm {
   my ($dem, $rep, $color) = (0,0,"NONE");
   my $try=0;
   
-  while (($dem==0 || $rep==0) && $try<=5) {
+  while (($dem==0 && $rep==0) && $try<=5) {
   
   eval { 
-    @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('DEM','Dem','dem') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
   };
   # find the total DEM amts
   $dem = $dems[0][0];
@@ -910,7 +938,7 @@ sub Aggr_Comm2Comm {
   }
   
   eval { 
-    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
   };
   # find the total REP amts
   $rep = $reps[0][0];
@@ -1013,10 +1041,10 @@ sub Aggr_Individuals {
   my ($dem, $rep, $color) = (0,0,"NONE");
   my $try=0;
   
-  while (($dem==0 || $rep==0) && $try<=3) {
+  while (($dem==0 && $rep==0) && $try<=3) {
   
   eval { 
-    @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('DEM','Dem','dem') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @dems = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? ".$cycle,undef,$latsw,$latne,$longsw,$longne);
   };
   # find the total DEM amts
   $dem = $dems[0][0];
@@ -1027,7 +1055,7 @@ sub Aggr_Individuals {
   }
   
   eval { 
-    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @reps = ExecSQL($dbuser, $dbpasswd, "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<?".$cycle,undef,$latsw,$latne,$longsw,$longne);
   };
   # find the total REP amts
   $rep = $reps[0][0];
