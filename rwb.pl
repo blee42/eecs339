@@ -71,6 +71,14 @@ use DBI;
 use Time::ParseDate;
 
 #
+#
+# this is for password encryption
+#
+use Crypt::OpenSSL::Bignum;
+use Crypt::OpenSSL::Random;
+use Crypt::OpenSSL::RSA;
+
+#
 # You need to override these for access to your database
 #
 my $dbuser   = "bal312";
@@ -181,6 +189,7 @@ if ( $action eq "login" ) {
         # generate the right output cookie, if any.
         #
         ( $user, $password ) = ( param('user'), param('password') );
+        $password = EncryptPass($password);
         if ( ValidUser( $user, $password ) ) {
 
             # if the user's info is OK, then give him a cookie
@@ -761,6 +770,7 @@ if ( $action eq "add-user" ) {
             my $name     = param('name');
             my $email    = param('email');
             my $password = param('password');
+            $password = EncryptPass($password);
             my $error;
             $error = UserAdd( $name, $password, $email, $user );
             if ($error) {
@@ -1939,6 +1949,13 @@ sub MakeRaw {
     }
     $out .= "</pre>\n";
     return $out;
+}
+
+sub EncryptPass {
+    my $password = @_;
+    my $rsa = Crypt::OpenSSL::RSA->generate_key(2048);
+
+    return $rsa->ENCRYPT($password);
 }
 
 #
