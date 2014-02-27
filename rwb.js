@@ -133,7 +133,7 @@ function ViewShift()
   }
 
   cycles=$(".cycles");
-  cyclesChecked="";
+  var cyclesChecked="";
   for (var i=0; i<cycles.length; i++)
   {
     if(cycles[i].checked)

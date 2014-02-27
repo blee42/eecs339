@@ -465,11 +465,17 @@ if ( $action eq "near" ) {
     my %what;
 
     my @cycle = split( /\s*,\s*/, $cycle );
-    my $cycleSQL = "and (cycle=" . shift(@cycle);
-    foreach my $val (@cycle) {
-        $cycleSQL = $cycleSQL . " or cycle=" . $val;
+    my $cycleSQL="";
+    if (@cycle) {
+        $cycleSQL = "and (cycle=" . shift(@cycle);
+        foreach my $val (@cycle) {
+            $cycleSQL = $cycleSQL . " or cycle=" . $val;
+        }
+        $cycleSQL = $cycleSQL . ")";
     }
-    $cycleSQL = $cycleSQL . ")";
+    else {
+        $cycleSQL  = "and cycle=1112";
+    }
 
     $format = "table" if !defined($format);
     $cycle  = "1112"  if !defined($cycle);
@@ -558,11 +564,17 @@ if ( $action eq "sum" ) {
     my %what;
 
     my @cycle = split( /\s*,\s*/, $cycle );
-    my $cycleSQL = "and (cycle=" . shift(@cycle);
-    foreach my $val (@cycle) {
-        $cycleSQL = $cycleSQL . " or cycle=" . $val;
+    my $cycleSQL="";
+    if (@cycle) {
+        $cycleSQL = "and (cycle=" . shift(@cycle);
+        foreach my $val (@cycle) {
+            $cycleSQL = $cycleSQL . " or cycle=" . $val;
+        }
+        $cycleSQL = $cycleSQL . ")";
     }
-    $cycleSQL = $cycleSQL . ")";
+    else {
+        $cycleSQL  = "and cycle=1112";
+    }
 
     $format = "table" if !defined($format);
     $cycle  = "1112"  if !defined($cycle);
