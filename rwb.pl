@@ -587,6 +587,10 @@ if ( $action eq "near" ) {
     }
 }
 
+#
+#
+# SUM
+#
 if ( $action eq "sum" ) {
     my $latne     = param("latne");
     my $longne    = param("longne");
