@@ -498,6 +498,7 @@ if ( $action eq "near" ) {
                 print $str;
             }
         }
+	}
 
     if ( $what{candidates} ) {
         my ( $str, $error )
@@ -525,6 +526,7 @@ if ( $action eq "near" ) {
                 print $str;
             }
         }
+	}
 
     if ( $what{opinions} ) {
         my ( $str, $error )
