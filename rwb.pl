@@ -74,8 +74,6 @@ use Time::ParseDate;
 #
 # this is for password encryption
 #
-use Crypt::OpenSSL::Bignum;
-use Crypt::OpenSSL::Random;
 use Crypt::OpenSSL::RSA;
 
 #
