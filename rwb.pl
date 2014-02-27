@@ -499,29 +499,6 @@ if ( $action eq "near" ) {
             }
         }
 
-        my ( $cm2cmt, $c2cm_color, $error1 )
-            = Aggr_Comm2Comm( $latne, $longne, $latsw, $longsw, $cycleSQL,
-            $format );
-        if ($error1) {
-            print "Error in Comm2Comm summary data";
-        }
-        else {
-            print "<h3>Committee to Committee Summary</h3>";
-            print $cm2cmt;
-        }
-
-        my ( $cm2cnd, $c2cd_color, $error2 )
-            = Aggr_Comm2Cand( $latne, $longne, $latsw, $longsw, $cycleSQL,
-            $format );
-        if ($error2) {
-            print "Error in Comm2Cand summary data";
-        }
-        else {
-            print "<h3>Committee to Candidate Summary</h3>";
-            print $cm2cnd;
-        }
-    }
-
     if ( $what{candidates} ) {
         my ( $str, $error )
             = Candidates( $latne, $longne, $latsw, $longsw, $cycleSQL,
@@ -549,18 +526,6 @@ if ( $action eq "near" ) {
             }
         }
 
-        my ( $ind, $ind_color, $error3 )
-            = Aggr_Individuals( $latne, $longne, $latsw, $longsw,
-            $cycleSQL, $format );
-        if ($error3) {
-            print "Error in Individual summary data";
-        }
-        else {
-            print "<h3>Individual Summary</h3>";
-            print $ind;
-        }
-    }
-
     if ( $what{opinions} ) {
         my ( $str, $error )
             = Opinions( $latne, $longne, $latsw, $longsw, $cycleSQL,
@@ -572,17 +537,6 @@ if ( $action eq "near" ) {
             else {
                 print $str;
             }
-        }
-
-        my ( $opn, $op_color, $error4 )
-            = Aggr_Opinions( $latne, $longne, $latsw, $longsw, $cycleSQL,
-            $format );
-        if ($error4) {
-            print "Error in Opinion summary data";
-        }
-        else {
-            print "<h3>Opinion Summary</h3>";
-            print $opn;
         }
     }
 }
