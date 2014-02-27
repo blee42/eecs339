@@ -8,8 +8,8 @@ function Start(location)
 {
  var lat = location.coords.latitude;
  var long = location.coords.longitude;
- var opinion = document.getElementById("GiveOpinion");
-   opinion.innerHTML += '<form name="input" action="rwb.pl?" method="get">'+
+ var color = document.getElementById("GiveOpinion");
+   color.innerHTML += '<form name="input" action="rwb.pl?" method="get">'+
                         '<input type="hidden" name="longitude" value='+ long+'>'+
                         '<input type="hidden" name="latitude" value='+ lat+ '>'+
                         '<input type="hidden" name="run" value="1" />'+

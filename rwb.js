@@ -27,7 +27,7 @@ function UpdateMapById(id, tag) {
   var data = target.innerHTML;
 
   var rows  = data.split("\n");
-  
+
   for (i in rows) {
    var cols = rows[i].split("\t");
    var lat = cols[0];
@@ -51,7 +51,7 @@ function ClearMarkers()
  function UpdateMap()
  {
   var color = document.getElementById("color");
-  
+
   color.innerHTML="<b><blink>Updating Display...</blink></b>";
   color.style.backgroundColor='white';
 
@@ -75,7 +75,7 @@ function ClearMarkers()
   }
 
   color.innerHTML="Ready";
-  
+
   if (Math.random()>0.5) { 
     color.style.backgroundColor='blue';
   } else {
@@ -139,15 +139,12 @@ function ViewShift()
     if(cycles[i].checked)
     {
       cyclesChecked=cyclesChecked+cycles[i].id+",";
-        // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cycles[i].id, NewData);
-      }
     }
-    
+  }
+
     // debug status flows through by cookie
-    // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees", NewData);
-    // $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice, NewData);
-    
-    // $.get("rwb.pl?act=sum&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cyclesChecked, NewSum);
+
+    $.get("rwb.pl?act=sum&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cyclesChecked, NewSum);
     $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what="+datachoice+"&cycle="+cyclesChecked, NewData);
   }
 
@@ -167,7 +164,7 @@ function ViewShift()
     var lat = location.coords.latitude;
     var long = location.coords.longitude;
     var acc = location.coords.accuracy;
-    
+
     var mapc = $( "#map");
 
     map = new google.maps.Map(mapc[0], 
