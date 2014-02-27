@@ -668,35 +668,81 @@ if ( $action eq "sum" ) {
 
 #
 # INVITE USER
+#                                                                  
+if ($action eq "invite-user") { 
+  if (!UserCan($user,"invite-users") && !USerCan($user,"manage-users")) {
+    print h2("You do not have the required permissions to invite users.");
+  } else {
+    if (!$run) {
+      print start_form(-name=>'InviteUser'),
+      h2 ('Invite User'),
+      "Email to Invite: ", textfield(-name=>'email'),
+      p,
+      hidden(-name=>'run',-default=>['1']),
+      hidden(-name=>'act',-default=>['invite-user']),
+      submit,
+      end_form,
+      hr;
+    } else {
+      my $address=param('email');
+      my $range=999999999999;
+      my $rand=int(rand($range));
+      my $subject="RWBInvitation";
+      my $content="You have been invited to register an account on RWB.\n
+		   Please go to the following link to continue: \n
+		   http://murphy.wot.eecs.northwestern.edu/~bal312/rwb/rwb.pl?act=new-invite&email=$address&rand=$rand&refer=$user";
+      ULink($rand);	
+      open(MAIL,"| mailx -s $subject $address") or die "Can't run mail\n";
+      print MAIL $content;      
+      close(MAIL);
+      print "Email sent by $user\n";
+    }
+  }
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
+}
+
 #
-if ( $action eq "invite-user" ) {
-    if (   !UserCan( $user, "invite-users" )
-        && !USerCan( $user, "manage-users" ) )
-    {
-        print h2("You do not have the required permissions to invite users.");
+# NEW INVITE
+#                                                                  
+if ($action eq "new-invite") { 
+  if (!$run) {
+    print start_form(-name=>'Register'),
+    h2 ('New User Registration'),
+    "Username: ", textfield(-name=>'name'),
+    p,
+    "Password: ", textfield(-name=>'password'),
+    p,
+	"Email: ", textfield(-name=>'email'),
+    p,
+	hidden("EmailKey: ", textfield(-name=>'rand')),
+    p,
+	hidden("Referer: ", textfield(-name=>'refer')),
+    p,
+    hidden(-name=>'run',-default=>['1']),
+    hidden(-name=>'act',-default=>['new-invite']),
+    submit,
+    end_form,
+    hr;
+  } else {
+    my $cgi = new CGI;
+    my $name=param('name');
+    my $password=param('password');
+	my $address=param('email');
+	my $ulink=param('rand');
+    my $permissions=param('refer');
+    my $error;
+	my $linkcheck=CheckLink($ulink);
+	if ($linkcheck) {		
+    $error=NewInvite($name,$password,$address,$permissions);
+    if ($error) {
+      print "Can't register because of $error";
+    } else {
+      RLink($ulink);
+      print "You have been registered as $name ($address) and referred by $permissions";
     }
-    else {
-        if ( !$run ) {
-            print start_form( -name => 'InviteUser' ), h2('Invite User'),
-                "Email to Invite: ", textfield( -name => 'email' ), p,
-                hidden( -name => 'run', -default => ['1'] ),
-                hidden( -name => 'act', -default => ['invite-user'] ),
-                submit,
-                end_form,
-                hr;
-        }
-        else {
-            my $address = param('email');
-            my $subject = "Your New Account";
-            my $content = "Testing";
-            open( MAIL, "| mailx -s $subject $address" )
-                or die "Can't run mail\n";
-            print MAIL $content;
-            close(MAIL);
-            print "Email sent by $user\n";
-        }
-    }
-    print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
+	}
+  }
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
 #
 # GIVE OPINION DATA
@@ -1608,6 +1654,55 @@ sub GiveOp {
         );
     };
     return $@;
+}
+
+#
+# Invite user
+#
+sub NewInvite { 
+  eval {
+		ExecSQL($dbuser,
+			$dbpasswd,
+			"insert into rwb_users (name,password,email,referer) values (?,?,?,?)",
+			undef,
+			@_);
+		};
+  return $@;
+}
+
+#
+# Unique key
+#
+sub ULink {
+  eval {ExecSQL($dbuser,$dbpasswd,"insert into unique_link (ulink) values (?)",undef,@_);};
+  return $@;
+}
+
+#check if unique key
+sub CheckLink {
+	my ($link) = @_;
+    my @col;
+    eval {
+        @col = ExecSQL(
+            $dbuser,
+            $dbpasswd,
+            "select count(*) from unique_link where ulink=?",
+            "COL",
+            $link
+        );
+    };
+    if ($@) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+	
+
+sub RLink {
+  eval { ExecSQL($dbuser,$dbpasswd,"delete from unique_link where ulink=?",undef,@_);};
+  return $@;
 }
 
 #

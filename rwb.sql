@@ -17,7 +17,12 @@
 --
 --
 
-
+--
+-- Unique identifing tags for invite links
+--
+create table unique_key (
+  ulink  number not null primary key
+);
 --
 -- RWB users.  Self explanatory
 --
