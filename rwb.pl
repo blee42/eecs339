@@ -369,12 +369,6 @@ if ( $action eq "base" ) {
     my @cycles;
 
     eval {
-# @cycles = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.candidate_master natural join cs339.cand_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<?
-#   union select distinct cycle from cs339.committee_master natural join cs339.cmte_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<?
-#   union select distinct cycle from cs339.individual natural join cs339.ind_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne,$latsw,$latne,$longsw,$longne,$latsw,$latne,$longsw,$longne);
-
-# @cycles = ExecSQL($dbuser, $dbpasswd, "select distinct cycle from cs339.candidate_master natural join cs339.cand_id_to_geo where latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
-
         @cycles = ExecSQL( $dbuser, $dbpasswd,
             "select distinct cycle from cs339.candidate_master union select distinct cycle from cs339.committee_master union select distinct cycle from cs339.individual"
         );
@@ -449,7 +443,6 @@ if ( $action eq "base" ) {
 #
 #
 # NEAR
-# and AGGREGATE
 #
 # Nearby committees, candidates, individuals, and opinions
 #
@@ -594,12 +587,109 @@ if ( $action eq "near" ) {
     }
 }
 
+if ( $action eq "sum" ) {
+    my $latne     = param("latne");
+    my $longne    = param("longne");
+    my $latsw     = param("latsw");
+    my $longsw    = param("longsw");
+    my $whatparam = param("what");
+    my $format    = param("format");
+    my $cycle     = param("cycle");
+    my %what;
+
+    my @cycle = split( /\s*,\s*/, $cycle );
+    my $cycleSQL = "and (cycle=" . shift(@cycle);
+    foreach my $val (@cycle) {
+        $cycleSQL = $cycleSQL . " or cycle=" . $val;
+    }
+    $cycleSQL = $cycleSQL . ")";
+
+    $format = "table" if !defined($format);
+    $cycle  = "1112"  if !defined($cycle);
+
+    if ( !defined($whatparam) || $whatparam eq "all" ) {
+        %what = (
+            committees  => 1,
+            candidates  => 1,
+            individuals => 1,
+            opinions    => 1
+        );
+    }
+    else {
+        map { $what{$_} = 1 } split( /\s*,\s*/, $whatparam );
+    }
+
+    if ( $what{committees} ) {
+        my ( $cm2cmt, $c2cm_color, $error1 )
+            = Aggr_Comm2Comm( $latne, $longne, $latsw, $longsw, $cycleSQL,
+            $format );
+        if ($error1) {
+            print "Error in Comm2Comm summary data";
+        }
+        else {
+            print "<h3>Committee to Committee Summary</h3>";
+            print $cm2cmt;
+        }
+
+        my ( $cm2cnd, $c2cd_color, $error2 )
+            = Aggr_Comm2Cand( $latne, $longne, $latsw, $longsw, $cycleSQL,
+            $format );
+        if ($error2) {
+            print "Error in Comm2Cand summary data";
+        }
+        else {
+            print "<h3>Committee to Candidate Summary</h3>";
+            print $cm2cnd;
+        }
+    }
+
+    if ( $what{candidates} ) {
+        my ( $str, $error )
+            = Candidates( $latne, $longne, $latsw, $longsw, $cycleSQL,
+            $format );
+        if ( !$error ) {
+            if ( $format eq "table" ) {
+                print "<h2>Nearby candidates</h2>$str";
+            }
+            else {
+                print $str;
+            }
+        }
+    }
+
+    if ( $what{individuals} ) {
+        my ( $ind, $ind_color, $error3 )
+            = Aggr_Individuals( $latne, $longne, $latsw, $longsw,
+            $cycleSQL, $format );
+        if ($error3) {
+            print "Error in Individual summary data";
+        }
+        else {
+            print "<h3>Individual Summary</h3>";
+            print $ind;
+        }
+    }
+
+    if ( $what{opinions} ) {
+        my ( $opn, $op_color, $error4 )
+            = Aggr_Opinions( $latne, $longne, $latsw, $longsw, $cycleSQL,
+            $format );
+        if ($error4) {
+            print "Error in Opinion summary data";
+        }
+        else {
+            print "<h3>Opinion Summary</h3>";
+            print $opn;
+        }
+    }
+}
+
 #
 # INVITE USER
 #
 if ( $action eq "invite-user" ) {
-    if (   !UserCan( $user, "manage-users" )
-        && !UserCan( $user, "invite-users" ) )
+    if (   !UserCan( $user, "invite-users" )
+        && !USerCan( $user, "manage-users" ) )
     {
         print h2("You do not have the required permissions to invite users.");
     }
@@ -607,33 +697,25 @@ if ( $action eq "invite-user" ) {
         if ( !$run ) {
             print start_form( -name => 'InviteUser' ), h2('Invite User'),
                 "Email to Invite: ", textfield( -name => 'email' ), p,
+                hidden( -name => 'run', -default => ['1'] ),
+                hidden( -name => 'act', -default => ['invite-user'] ),
                 submit,
                 end_form,
                 hr;
         }
         else {
-            print "Can't add opinion because something...";
-
+            my $address = param('email');
+            my $subject = "Your New Account";
+            my $content = "Testing";
+            open( MAIL, "| mailx -s $subject $address" )
+                or die "Can't run mail\n";
+            print MAIL $content;
+            close(MAIL);
+            print "Email sent by $user\n";
         }
     }
     print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
-
-#$ mailx -s "Your New Account" f...@bar.com
-#[type content of email]
-#[type CTRL-D]
-#$
-#To drive it from Perl looks like this:
-#$address="f...@bar.com";
-#$subject="Your New Account";
-#$content="Your New Account is <.....>";
-# This is the magic.  It means "run mail -s ..." and let me
-# write to its input, which I will call MAIL:
-# open(MAIL,"| mailx -s $subject $address") or die "Can't run mail\n";
-# And here we write to it
-# print MAIL $content;
-# And then close it, resulting in the email being sent
-# close(MAIL);
 #
 # GIVE OPINION DATA
 #
@@ -643,18 +725,17 @@ if ( $action eq "give-opinion-data" ) {
             "You do not have the required permissions to give opinion data.");
     }
     else {
+        print "<div id=\"GiveOpinion\" style=\:width:100\%; height:100\%\">";
         if ( !$run ) {
-            print start_form( -name => 'GiveOpinion' ),
-                <script src="location.js">;
-            h2('Give Opinion'),
+            print start_form( -name => 'GiveOpinion' ), h2('Give Opinion'),
                 "Color Guide",                     p,
                 "-1 = Red | 0 = White | 1 = Blue", p,
-                "Color: ", textfield( -number => 'color' ), p,
-                hidden( -number => 'latitude',  -default => ['lat'] ),
-                hidden( -number => 'longitude', -default => ['long'] ),
-                submit,
+                hidden( -name => 'run', -default => ['1'] ),
+                hidden( -name => 'act', -default => ['give-opinion-data'] ),
                 end_form,
-                hr;
+                print
+                "<script type=\"text/javascript\" src=\"location.js\"> </script>";
+            hr;
         }
         else {
             my $name  = $user;
@@ -671,6 +752,7 @@ if ( $action eq "give-opinion-data" ) {
             }
         }
     }
+    print "</div>";
     print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
 
@@ -810,7 +892,7 @@ if ( $action eq "add-perm-user" ) {
 }
 
 #
-## REVOKE-PERM-USER
+# REVOKE-PERM-USER
 #
 # User Permission Revocation functionaltiy
 #
