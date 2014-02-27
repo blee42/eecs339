@@ -358,8 +358,18 @@ if ( $action eq "base" ) {
         "<input type=\"checkbox\" name=\"candidate\" id=\"candidate\" values=1 onclick=ViewShift()>Candidate<br>";
     print
         "<input type=\"checkbox\" name=\"individual\" id=\"individual\" values=1 onclick=ViewShift()>Individual<br>";
-    print
-        "<input type=\"checkbox\" name=\"opinions\" id=\"opinions\" values=1 onclick=ViewShift()>Opinions<br>";
+
+    my @opinionperm;
+    eval {
+        @opinionperm = ExecSQL( $dbuser, $dbpasswd,
+            "select name from rwb_permissions where action='give-opinion-data'"
+        );
+    }; 
+    foreach (@opinionperm) {
+        if (@{ $_ } eq $user) {
+            print "<input type=\"checkbox\" name=\"opinions\" id=\"opinions\" values=1 onclick=ViewShift()>Opinions<br>";
+        }
+    }
     print "</form>";
 
     #
