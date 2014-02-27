@@ -1019,7 +1019,7 @@ sub Aggr_Comm2Cand {
             @dems = ExecSQL(
                 $dbuser,
                 $dbpasswd,
-                "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? "
+                "select sum(transaction_amnt) from (select cmte_ID, cmte_pty_affiliation, cycle from cs339.committee_master where cmte_pty_affiliation in ('DEM','Dem','dem')) natural join cs339.cmte_id_to_geo natural join (select cmte_id, transaction_amnt from cs339.comm_to_cand) where  latitude>? and latitude<? and longitude>? and longitude<? "
                     . $cycle,
                 undef,
                 $latsw,
@@ -1042,7 +1042,7 @@ sub Aggr_Comm2Cand {
             @reps = ExecSQL(
                 $dbuser,
                 $dbpasswd,
-                "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_cand where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<? "
+                "select sum(transaction_amnt) from (select cmte_ID, cmte_pty_affiliation, cycle from cs339.committee_master where cmte_pty_affiliation in ('REP','Rep','rep','GOP')) natural join cs339.cmte_id_to_geo natural join (select cmte_id, transaction_amnt from cs339.comm_to_cand) where  latitude>? and latitude<? and longitude>? and longitude<? "
                     . $cycle,
                 undef,
                 $latsw,
@@ -1113,7 +1113,7 @@ sub Aggr_Comm2Comm {
             @dems = ExecSQL(
                 $dbuser,
                 $dbpasswd,
-                "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? "
+                "select sum(transaction_amnt) from (select cmte_ID, cmte_pty_affiliation, cycle from cs339.committee_master where cmte_pty_affiliation in ('DEM','Dem','dem')) natural join cs339.cmte_id_to_geo natural join (select cmte_id, transaction_amnt from cs339.comm_to_comm) where latitude>? and latitude<? and longitude>? and longitude<? "
                     . $cycle,
                 undef,
                 $latsw,
@@ -1136,7 +1136,7 @@ sub Aggr_Comm2Comm {
             @reps = ExecSQL(
                 $dbuser,
                 $dbpasswd,
-                "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.comm_to_comm where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<? "
+                "select sum(transaction_amnt) from (select cmte_ID, cmte_pty_affiliation, cycle from cs339.committee_master where cmte_pty_affiliation in ('REP','Rep','rep')) natural join cs339.cmte_id_to_geo natural join (select cmte_id, transaction_amnt from cs339.comm_to_comm) where  latitude>? and latitude<? and longitude>? and longitude<? "
                     . $cycle,
                 undef,
                 $latsw,
@@ -1295,13 +1295,13 @@ sub Aggr_Individuals {
     my ( $dem, $rep, $color ) = ( 0, 0, "white" );
     my $try = 0;
 
-    while ( ( $dem == 0 || $rep == 0 ) && $try <= 3 ) {
+    while ( ( $dem == 0 || $rep == 0 ) && $try <= 2 ) {
 
         eval {
             @dems = ExecSQL(
                 $dbuser,
                 $dbpasswd,
-                "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('DEM','Dem','dem') and latitude>? and latitude<? and longitude>? and longitude<? "
+                "select sum(transaction_amnt) from (select cmte_ID, cmte_pty_affiliation from cs339.committee_master where cmte_pty_affiliation in ('DEM','Dem','dem')) natural join cs339.ind_to_geo natural join (select cmte_id, transaction_amnt, cycle, sub_id from cs339.individual) where latitude>? and latitude<? and longitude>? and longitude<? "
                     . $cycle,
                 undef,
                 $latsw,
@@ -1324,7 +1324,7 @@ sub Aggr_Individuals {
             @reps = ExecSQL(
                 $dbuser,
                 $dbpasswd,
-                "select sum(transaction_amnt) from cs339.committee_master natural join cs339.cmte_id_to_geo natural join cs339.individual where cmte_pty_affiliation in ('REP','Rep','rep','GOP') and latitude>? and latitude<? and longitude>? and longitude<? "
+                "select sum(transaction_amnt) from (select cmte_ID, cmte_pty_affiliation from cs339.committee_master where cmte_pty_affiliation in ('REP','rep','Rep','GOP')) natural join cs339.ind_to_geo natural join (select cmte_id, transaction_amnt, cycle, sub_id from cs339.individual) where latitude>? and latitude<? and longitude>? and longitude<? " 
                     . $cycle,
                 undef,
                 $latsw,
@@ -1483,10 +1483,10 @@ sub Aggr_Opinions {
     }
 
     if ( $avg > 0 ) {
-        $color = "red";
+        $color = "blue";
     }
     elsif ( $avg < 0 ) {
-        $color = "blue";
+        $color = "red";
     }
     else {
         $color = "white";
