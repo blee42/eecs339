@@ -1,2 +1,2 @@
-eecs339
-=======
+EECS 339: Introduction Databases
+
