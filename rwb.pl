@@ -373,7 +373,7 @@ if ( $action eq "base" ) {
         );
     }; 
     foreach (@opinionperm) {
-        if (@{ $_ } eq $user) {
+        if ("@{ $_ }" eq $user) {
             print "<input type=\"checkbox\" name=\"opinions\" id=\"opinions\" values=1 onclick=ViewShift()>Opinions<br>";
         }
     }
